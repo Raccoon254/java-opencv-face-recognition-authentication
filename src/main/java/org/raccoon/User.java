@@ -13,7 +13,6 @@ public class User {
         this.faceData = faceData;
     }
 
-    // Getters and setters
     public String getUsername() { return username; }
     public String getPassword() { return password; }
     public Mat getFaceData() { return faceData; }

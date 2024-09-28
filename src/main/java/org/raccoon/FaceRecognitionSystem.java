@@ -1,46 +1,82 @@
 package org.raccoon;
 
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.core.Mat;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.swing.*;
 
 public class FaceRecognitionSystem {
-    private Map<String, User> registeredUsers = new HashMap<>();
-    private CascadeClassifier faceDetector;
+    private GUI gui;
 
-    public FaceRecognitionSystem(CascadeClassifier faceDetector) {
-        this.faceDetector = faceDetector;
+    public FaceRecognitionSystem(GUI gui) {
+        this.gui = gui;
     }
 
-    public void registerUser(String username, String password, Mat faceData) {
-        registeredUsers.put(username, new User(username, password, faceData));
-    }
+    public void register() {
+        String username = gui.getUsernameField().getText().trim();
+        String password = new String(gui.getPasswordField().getPassword());
 
-    public boolean loginUser(String username, String password) {
-        User user = registeredUsers.get(username);
-        return user != null && user.getPassword().equals(password);
-    }
-
-    public String recognizeFace(Mat face) {
-        for (User user : registeredUsers.values()) {
-            double similarity = compareImages(face, user.getFaceData());
-            if (similarity > 0.8) {
-                return user.getUsername();
-            }
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Please enter both username and password", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
-        return null;
+
+        Mat frame = new Mat();
+        OpenCVManager.getCapture().read(frame);
+
+        Mat face = OpenCVManager.detectAndExtractFace(frame);
+        if (face != null) {
+            UserManager.registerUser(username, password, face);
+            JOptionPane.showMessageDialog(null, "User registered successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, "No face detected. Registration failed.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    private double compareImages(Mat img1, Mat img2) {
-        Mat diff = new Mat();
-        Core.absdiff(img1, img2, diff);
-        Mat grayDiff = new Mat();
-        Imgproc.cvtColor(diff, grayDiff, Imgproc.COLOR_BGR2GRAY);
-        Scalar sum = Core.sumElems(grayDiff);
-        double totalPixels = grayDiff.rows() * grayDiff.cols();
-        return 1 - (sum.val[0] / (totalPixels * 255));
+    public void login() {
+        String username = gui.getUsernameField().getText().trim();
+        String password = new String(gui.getPasswordField().getPassword());
+
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Please enter both username and password", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!UserManager.isUserRegistered(username)) {
+            JOptionPane.showMessageDialog(null, "User not found. Please register first.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        User user = UserManager.getUser(username);
+        if (!user.getPassword().equals(password)) {
+            JOptionPane.showMessageDialog(null, "Incorrect password.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(null, "Password correct. Please click 'Scan Face' to complete login.", "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public void scanFace() {
+        String username = gui.getUsernameField().getText().trim();
+        if (username.isEmpty() || !UserManager.isUserRegistered(username)) {
+            JOptionPane.showMessageDialog(null, "Please enter a valid username and click 'Login' first.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        Mat frame = new Mat();
+        OpenCVManager.getCapture().read(frame);
+
+        Mat face = OpenCVManager.detectAndExtractFace(frame);
+        if (face != null) {
+            User user = UserManager.getUser(username);
+            double similarity = OpenCVManager.compareImages(face, user.getFaceData());
+
+            if (similarity > 0.8) {
+                JOptionPane.showMessageDialog(null, "Face recognized. Login successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(null, "Face doesn't match. Login failed.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "No face detected. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

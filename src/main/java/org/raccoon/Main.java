@@ -21,6 +21,8 @@ public class Main {
             GUI gui = new GUI();
             gui.createAndShowGUI();
             OpenCVManager.initializeOpenCV(gui);
+            FaceRecognitionSystem system = new FaceRecognitionSystem(gui);
+            gui.setFaceRecognitionSystem(system);
         });
     }
 }
