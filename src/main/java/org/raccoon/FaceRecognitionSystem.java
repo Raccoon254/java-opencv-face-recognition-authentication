@@ -1,7 +1,6 @@
 package org.raccoon;
 
 import org.opencv.core.Mat;
-
 import javax.swing.*;
 
 public class FaceRecognitionSystem {
