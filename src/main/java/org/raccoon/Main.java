@@ -11,6 +11,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +24,7 @@ public class Main {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
 
-    private static final String CASCADE_FILE = "face.xml";
+    private static final String CASCADE_FILE = "/face.xml";
     private static final Map<String, UserData> registeredUsers = new HashMap<>();
 
     private static JFrame frame;
@@ -46,9 +51,9 @@ public class Main {
     public static void main(String[] args) {
 
         try {
-            UIManager.setLookAndFeel( new FlatDarkLaf() );
-        } catch( Exception ex ) {
-            System.err.println( "Failed to initialize LaF" );
+            UIManager.setLookAndFeel(new FlatDarkLaf());
+        } catch (Exception ex) {
+            System.err.println("Failed to initialize LaF");
         }
 
         SwingUtilities.invokeLater(() -> {
@@ -108,7 +113,9 @@ public class Main {
         loginButton.setPreferredSize(buttonSize);
         scanFaceButton.setPreferredSize(buttonSize);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
         controlPanel.add(new JLabel("Username:"), gbc);
         gbc.gridy = 1;
         controlPanel.add(usernameField, gbc);
@@ -118,12 +125,15 @@ public class Main {
         gbc.gridy = 3;
         controlPanel.add(passwordField, gbc);
 
-        gbc.gridy = 4; gbc.gridwidth = 1;
+        gbc.gridy = 4;
+        gbc.gridwidth = 1;
         controlPanel.add(registerButton, gbc);
         gbc.gridx = 1;
         controlPanel.add(loginButton, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2;
         controlPanel.add(scanFaceButton, gbc);
 
         registerButton.addActionListener(e -> register());
@@ -171,34 +181,57 @@ public class Main {
     }
 
     private static void initializeOpenCV() {
-        faceDetector = new CascadeClassifier(CASCADE_FILE);
-        capture = new VideoCapture(0);
+        // Load the cascade file from resources and extract it to a temporary file
+        try {
+            URL xmlUrl = Main.class.getClassLoader().getResource("face.xml");
+            if (xmlUrl == null) {
+                JOptionPane.showMessageDialog(frame, "Could not find face detection file!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-        if (!capture.isOpened()) {
-            JOptionPane.showMessageDialog(frame, "Error opening camera", "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
+            // Create a temporary file
+            File tempFile = File.createTempFile("face", ".xml");
+            tempFile.deleteOnExit(); // Delete the temp file on exit
 
-        new Thread(() -> {
-            Mat frame = new Mat();
-            while (true) {
-                capture.read(frame);
-                if (!frame.empty()) {
-                    Mat processedFrame = processFrame(frame);
-                    BufferedImage image = matToBufferedImage(processedFrame);
-                    //Scale down the image to fit the screen
-
-
-                    SwingUtilities.invokeLater(() -> imageLabel.setIcon(new ImageIcon(image)));
-                }
-                try {
-                    // 60fps
-                    Thread.sleep(3);  // ~30 fps
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+            // Copy the resource to the temporary file
+            try (InputStream in = xmlUrl.openStream();
+                 FileOutputStream out = new FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
                 }
             }
-        }).start();
+
+            // Now load the classifier from the temporary file
+            faceDetector = new CascadeClassifier(tempFile.getAbsolutePath());
+            capture = new VideoCapture(0);
+
+            if (!capture.isOpened()) {
+                JOptionPane.showMessageDialog(frame, "Error opening camera", "Error", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
+
+            new Thread(() -> {
+                Mat frame = new Mat();
+                while (true) {
+                    capture.read(frame);
+                    if (!frame.empty()) {
+                        Mat processedFrame = processFrame(frame);
+                        BufferedImage image = matToBufferedImage(processedFrame);
+                        SwingUtilities.invokeLater(() -> imageLabel.setIcon(new ImageIcon(image)));
+                    }
+                    try {
+                        Thread.sleep(33);  // ~30 fps
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(frame, "Error loading face detection file: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private static Mat processFrame(Mat frame) {

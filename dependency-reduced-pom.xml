@@ -5,6 +5,11 @@
   <artifactId>JavaFaceRecognition</artifactId>
   <version>1.0-SNAPSHOT</version>
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
@@ -28,6 +33,20 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <mainClass>org.raccoon.Main</mainClass>
+          <systemProperties>
+            <systemProperty>
+              <key>java.library.path</key>
+              <value>C:\OPENCV\opencv\build\java\x64</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
       </plugin>
     </plugins>
   </build>
