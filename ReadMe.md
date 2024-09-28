@@ -2,11 +2,8 @@
 
 This project implements a face recognition system using Java and OpenCV. The application captures video from a webcam and detects faces in real time.
 
-<div>
-   <video autoplay loop muted controls width="100%" style="border-radius: 20px">
-     <source src="./static/video.mp4" type="video/mkv">
-   </video>
-</div>
+----
+Check out the video in /static folder for a demo of the application.
 
 ## Requirements
 
