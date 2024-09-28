@@ -18,8 +18,8 @@ This project implements a face recognition system using Java and OpenCV. The app
 
 1. **Clone the Repository**:
    ```bash
-   git clone <repository-url>
-   cd JavaFaceRecognition
+   git clone https://github.com/Raccoon254/java-opencv-face-recognition-authentication.git FaceRecognition
+   cd FaceRecognition
    ```
 
 2. **Install Dependencies**:
