@@ -1,4 +1,5 @@
 package org.raccoon;
+
 import org.opencv.core.Mat;
 
 public class User {
@@ -12,15 +13,8 @@ public class User {
         this.faceData = faceData;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public Mat getFaceData() {
-        return faceData;
-    }
+    // Getters and setters
+    public String getUsername() { return username; }
+    public String getPassword() { return password; }
+    public Mat getFaceData() { return faceData; }
 }
